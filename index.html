@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tư Vấn Nha Khoa Thế Linh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<meta name="description" content="AI tư vấn nha khoa miễn phí tại Phòng Khám Nha Khoa Thế Linh – Nghệ An. Hỏi bác sĩ về răng miệng, đặt lịch khám, upload ảnh răng.">
+<meta name="keywords" content="nha khoa Thế Linh, tư vấn răng miệng, nha khoa Nghệ An, AI nha khoa, đặt lịch khám răng">
+<meta property="og:title" content="AI Tư Vấn Nha Khoa Thế Linh">
+<meta property="og:description" content="Tư vấn răng miệng miễn phí 24/7 cùng bác sĩ AI tại Nha Khoa Thế Linh – Nghệ An">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
+</head>
+<body>
+
+<!-- Animated Background -->
+<div class="bg-wrap">
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+  <div id="particlesContainer"></div>
+</div>
+
+<!-- Marquee Header -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marqueeTrack"></div>
+</div>
+
+<!-- Sidebar Icons -->
+<div class="sidebar-icons">
+  <div class="sidebar-icon" title="AI Chat">🤖</div>
+  <div class="sidebar-icon" title="Menu">···</div>
+</div>
+
+<!-- Zalo Floating Button -->
+<a class="zalo-btn" href="https://zalo.me/199453572228641366" target="_blank" rel="noopener">
+  <div class="zalo-logo">Za</div>
+  Tư vấn bác sĩ 24/7
+</a>
+
+<!-- Main Content -->
+<div class="main-wrap">
+  <h1 class="hero-title">AI Tư Vấn Nha Khoa Thế Linh</h1>
+  <p class="hero-sub">Hỏi bất kỳ vấn đề răng miệng nào – các bác sĩ tại Nha khoa Thế Linh sẽ giải đáp.</p>
+
+  <div class="chat-grid">
+    <!-- Chat Card -->
+    <div class="chat-card">
+      <div class="chat-toolbar">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+            <span class="icon">📷</span> Upload ảnh răng
+          </button>
+          <div id="imgPreviewWrap" style="display:none"></div>
+        </div>
+        <button class="schedule-btn" onclick="openModal()">
+          📅 Đặt lịch khám
+        </button>
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)">
+
+      <div class="chat-messages" id="chatMessages"></div>
+
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatInput" placeholder="Nhập câu hỏi về răng miệng..." rows="1"
+          onkeydown="handleKeydown(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+
+      <div class="book-bottom">
+        <button class="book-bottom-btn" onclick="openModal()">📅 Đặt lịch khám</button>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      <div class="clinic-img-card">
+        <img src="1.png" alt="Nha Khoa Thế Linh" class="clinic-img">
+      </div>
+
+      <div class="info-card">
+        <div class="info-title">🦷 Phòng Khám Nha Khoa Thế Linh</div>
+        <div class="info-branch">🏥 Cơ sở 1</div>
+        <div class="info-row">📍 14 Nguyễn Huy Oánh, Khối 8B, P. Trường Vinh, Nghệ An</div>
+        <div class="info-row">📞 0585.137.666 – 0978.683.777</div>
+        <div class="call-btns">
+          <a class="call-btn" href="tel:0585137666">📞 0585.137.666</a>
+          <a class="call-btn" href="tel:0978683777">📞 0978.683.777</a>
+        </div>
+        <div class="info-branch">🏥 Cơ sở 2</div>
+        <div class="info-row">📍 QL48A Minh Xuân, Xã Minh Hợp, Nghệ An</div>
+        <div class="info-row">📞 0961.409.509 – 0978.683.777</div>
+        <div class="call-btns">
+          <a class="call-btn" href="tel:0961409509">📞 0961.409.509</a>
+          <a class="call-btn" href="tel:0978683777">📞 0978.683.777</a>
+        </div>
+        <div class="info-row">✉️ nhakhoathelinh1@gmail.com</div>
+        <a class="zalo-info-btn" href="https://zalo.me/199453572228641366" target="_blank" rel="noopener">
+          <span class="zalo-info-logo">Za</span> Tư vấn trực tiếp qua Zalo
+        </a>
+      </div>
+
+      <!-- Google Maps 2 cơ sở -->
+      <div class="maps-card">
+        <div class="maps-tabs">
+          <button class="map-tab active" onclick="switchMap(0, this)">🏥 Cơ sở 1</button>
+          <button class="map-tab" onclick="switchMap(1, this)">🏥 Cơ sở 2</button>
+        </div>
+        <div class="map-frame" id="mapFrame0" style="display:block">
+          <iframe
+            src="https://maps.google.com/maps?q=14+Nguy%E1%BB%85n+Huy+O%C3%A1nh%2C+Trường+Vinh%2C+Nghệ+An&output=embed"
+            width="100%" height="200" style="border:0;border-radius:12px" allowfullscreen loading="lazy">
+          </iframe>
+        </div>
+        <div class="map-frame" id="mapFrame1" style="display:none">
+          <iframe
+            src="https://maps.google.com/maps?q=QL48A+Minh+Xu%C3%A2n%2C+Minh+H%E1%BB%A3p%2C+Nghệ+An&output=embed"
+            width="100%" height="200" style="border:0;border-radius:12px" allowfullscreen loading="lazy">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleModalClick(event)">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-title">📅 Đặt lịch khám</div>
+    <div class="modal-sub">Điền thông tin – chúng tôi sẽ liên hệ xác nhận lịch khám sớm nhất.</div>
+    <form id="bookingForm" onsubmit="submitBooking(event)">
+      <div class="form-group">
+        <label class="form-label">Họ và tên *</label>
+        <input class="form-input" type="text" id="fname" placeholder="Nguyễn Văn A" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Địa chỉ</label>
+        <input class="form-input" type="text" id="faddr" placeholder="Địa chỉ của bạn">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chọn cơ sở khám *</label>
+        <div class="branch-select">
+          <label class="branch-opt" id="branchOpt1">
+            <input type="radio" name="branch" value="Cơ sở 1 – 14 Nguyễn Huy Oánh, P. Trường Vinh, Nghệ An" required>
+            <div class="branch-opt-inner">
+              <span class="branch-num">1</span>
+              <div>
+                <div class="branch-name">Cơ sở 1</div>
+                <div class="branch-addr">14 Nguyễn Huy Oánh, P. Trường Vinh, Nghệ An</div>
+              </div>
+            </div>
+          </label>
+          <label class="branch-opt" id="branchOpt2">
+            <input type="radio" name="branch" value="Cơ sở 2 – QL48A Minh Xuân, Xã Minh Hợp, Nghệ An">
+            <div class="branch-opt-inner">
+              <span class="branch-num">2</span>
+              <div>
+                <div class="branch-name">Cơ sở 2</div>
+                <div class="branch-addr">QL48A Minh Xuân, Xã Minh Hợp, Nghệ An</div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Số điện thoại *</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="form-input" type="tel" id="fphone" placeholder="0901 234 567" required style="flex:1">
+          <button type="button" class="service-toggle-btn" onclick="toggleServicePanel()">
+            🦷 Dịch vụ <span id="serviceCount" class="service-badge">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Service Panel (collapsible) -->
+      <div class="service-panel" id="servicePanel">
+        <div class="service-panel-title">Chọn dịch vụ quan tâm:</div>
+        <div class="checks-grid">
+          <label class="check-label"><input type="checkbox" name="service" value="Khám răng" onchange="updateServiceCount()"><span class="cbox">✓</span>🦷 Khám răng</label>
+          <label class="check-label"><input type="checkbox" name="service" value="Đau răng" onchange="updateServiceCount()"><span class="cbox">✓</span>😣 Đau răng</label>
+          <label class="check-label"><input type="checkbox" name="service" value="Trồng răng sứ" onchange="updateServiceCount()"><span class="cbox">✓</span>💎 Trồng răng sứ</label>
+          <label class="check-label"><input type="checkbox" name="service" value="Nhổ răng" onchange="updateServiceCount()"><span class="cbox">✓</span>🔧 Nhổ răng</label>
+          <label class="check-label"><input type="checkbox" name="service" value="Tẩy trắng răng" onchange="updateServiceCount()"><span class="cbox">✓</span>✨ Tẩy trắng</label>
+          <label class="check-label"><input type="checkbox" name="service" value="Viêm nướu" onchange="updateServiceCount()"><span class="cbox">✓</span>🩺 Viêm nướu</label>
+          <label class="check-label"><input type="checkbox" name="service" value="Gặp bác sĩ" onchange="updateServiceCount()"><span class="cbox">✓</span>👨‍⚕️ Gặp bác sĩ</label>
+          <label class="check-label"><input type="checkbox" name="service" value="Khác" onchange="updateServiceCount()"><span class="cbox">✓</span>📋 Khác</label>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">🗓 Đặt lịch ngay</button>
+      <button type="button" class="cancel-btn" onclick="closeModal()">Hủy</button>
+    </form>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
