@@ -1,36 +1,39 @@
 // ============================================================
-// CONFIG – API key nhúng sẵn, không cần nhập tay
+// CONFIG – Gọi qua Cloudflare Worker (API key ẩn hoàn toàn)
+// Sau khi deploy Worker, thay URL bên dưới bằng URL của bạn
 // ============================================================
-const GEMINI_API_KEY = 'AIzaSyDzbZy8_JHGqloWJpfdY4IOhtNSEmUyZtc';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const WORKER_URL = 'https://gemini-proxy-nkthelinh.namco-vc.workers.dev';
 
 // ============================================================
-// DOCTOR ROTATION – đổi tên mỗi 30 phút
+// DOCTOR ROTATION – đổi tên ngẫu nhiên mỗi 30 phút
 // ============================================================
 const DOCTORS = ['Hoa','Lan','Minh','Tuấn','Huyền','Trang','Thảo','Phương','Quân','Mai'];
 
 function getCurrentDoctor() {
-  const stored = localStorage.getItem('doctorData');
-  const now = Date.now();
-  if (stored) {
-    try {
+  try {
+    const stored = localStorage.getItem('doctorData');
+    const now = Date.now();
+    if (stored) {
       const data = JSON.parse(stored);
       if (now - data.ts < 30 * 60 * 1000) return data.name;
-    } catch(e) {}
+    }
+    const name = DOCTORS[Math.floor(Math.random() * DOCTORS.length)];
+    localStorage.setItem('doctorData', JSON.stringify({ name, ts: now }));
+    return name;
+  } catch(e) {
+    return DOCTORS[Math.floor(Math.random() * DOCTORS.length)];
   }
-  const name = DOCTORS[Math.floor(Math.random() * DOCTORS.length)];
-  localStorage.setItem('doctorData', JSON.stringify({ name, ts: now }));
-  return name;
 }
 
 const DOCTOR_NAME = getCurrentDoctor();
 
 // ============================================================
-// MARQUEE
+// MARQUEE HEADER
 // ============================================================
 (function initMarquee() {
   const content = '🦷  TRÍ TUỆ NHÂN TẠO THẾ LINH — NHA KHOA THẾ LINH  ';
   const track = document.getElementById('marqueeTrack');
+  if (!track) return;
   const repeated = Array(16).fill(null)
     .map(() => `<span class="marquee-item">${content}</span>`)
     .join('');
@@ -38,10 +41,11 @@ const DOCTOR_NAME = getCurrentDoctor();
 })();
 
 // ============================================================
-// PARTICLES
+// PARTICLES BACKGROUND
 // ============================================================
 (function initParticles() {
   const container = document.getElementById('particlesContainer');
+  if (!container) return;
   for (let i = 0; i < 24; i++) {
     const p = document.createElement('div');
     p.className = 'particle';
@@ -58,8 +62,7 @@ const DOCTOR_NAME = getCurrentDoctor();
 })();
 
 // ============================================================
-// CHAT – mỗi tab trình duyệt là 1 phiên độc lập
-// Lịch sử tự xóa sau 30 phút không hoạt động
+// CHAT STATE
 // ============================================================
 let pendingImage = null;
 let pendingImageBase64 = null;
@@ -69,6 +72,24 @@ let conversationHistory = [];
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 let resetTimer = null;
 
+function getSystemPrompt() {
+  return `Bạn là bác sĩ ${DOCTOR_NAME} – bác sĩ răng hàm mặt tại Phòng Khám Nha Khoa Thế Linh, Nghệ An.
+
+QUY TẮC BẮT BUỘC – PHẢI TUÂN THỦ TUYỆT ĐỐI:
+1. BẮT BUỘC mở đầu MỌI câu trả lời bằng: "Chào bạn, mình là bác sĩ ${DOCTOR_NAME} tại Nha khoa Thế Linh."
+2. Sau lời chào, tư vấn chuyên sâu về vấn đề răng miệng của bệnh nhân.
+3. Giải thích rõ ràng, thân thiện, dễ hiểu như bác sĩ đang tư vấn trực tiếp.
+4. Nếu bệnh nhân gửi ảnh răng: mô tả chi tiết những gì quan sát được (sâu răng, viêm nướu, mảng bám, nứt vỡ...) và đưa ra chẩn đoán sơ bộ.
+5. Nếu triệu chứng nghiêm trọng: khuyên bệnh nhân đến khám trực tiếp tại Nha khoa Thế Linh ngay.
+6. CHỈ tư vấn về sức khỏe răng miệng. Từ chối lịch sự nếu hỏi chủ đề khác.
+7. Luôn trả lời bằng tiếng Việt, giọng ấm áp, chuyên nghiệp.
+8. Kết thúc bằng câu hỏi nhẹ nhàng để hỗ trợ thêm.
+9. KHÔNG nhớ các cuộc trò chuyện trước. Mỗi tin nhắn là một tư vấn mới.`;
+}
+
+// ============================================================
+// SESSION RESET SAU 30 PHÚT
+// ============================================================
 function resetConversation() {
   conversationHistory = [];
   chatMessages.innerHTML = '';
@@ -77,47 +98,42 @@ function resetConversation() {
 
 function updateActivity() {
   clearTimeout(resetTimer);
-  resetTimer = setTimeout(() => {
-    resetConversation();
-  }, SESSION_TIMEOUT);
+  resetTimer = setTimeout(resetConversation, SESSION_TIMEOUT);
 }
 
+// ============================================================
+// TIN NHẮN CHÀO
+// ============================================================
 function showWelcome() {
   const welcome = `Chào bạn, mình là bác sĩ ${DOCTOR_NAME} – bác sĩ răng hàm mặt tại Nha khoa Thế Linh.\nMình sẽ giúp bạn giải đáp mọi vấn đề về sức khỏe răng miệng. Bạn đang gặp triệu chứng gì? 😊`;
   addMessage('ai', welcome);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    showWelcome();
-    updateActivity();
-  }, 700);
+  setTimeout(() => { showWelcome(); updateActivity(); }, 700);
 });
 
+// ============================================================
+// RENDER TIN NHẮN
+// ============================================================
 function addMessage(role, content, imgSrc) {
   const row = document.createElement('div');
   row.className = 'msg-row' + (role === 'user' ? ' user' : '');
-
   const av = document.createElement('div');
   av.className = 'avatar' + (role === 'user' ? ' user-av' : '');
   av.textContent = role === 'user' ? '👤' : '👨‍⚕️';
-
   const bub = document.createElement('div');
   bub.className = 'bubble ' + (role === 'user' ? 'user' : 'ai');
-
   if (imgSrc) {
     const img = document.createElement('img');
     img.src = imgSrc;
     bub.appendChild(img);
   }
-
   const span = document.createElement('span');
   span.textContent = content;
   bub.appendChild(span);
-
   if (role === 'user') { row.appendChild(bub); row.appendChild(av); }
   else { row.appendChild(av); row.appendChild(bub); }
-
   chatMessages.appendChild(row);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return bub;
@@ -127,15 +143,12 @@ function addTypingIndicator() {
   const row = document.createElement('div');
   row.className = 'msg-row';
   row.id = 'typingRow';
-
   const av = document.createElement('div');
   av.className = 'avatar';
   av.textContent = '👨‍⚕️';
-
   const ind = document.createElement('div');
   ind.className = 'typing-indicator';
   ind.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-
   row.appendChild(av);
   row.appendChild(ind);
   chatMessages.appendChild(row);
@@ -150,61 +163,52 @@ function removeTypingIndicator() {
 function typewriterEffect(text) {
   const row = document.createElement('div');
   row.className = 'msg-row';
-
   const av = document.createElement('div');
   av.className = 'avatar';
   av.textContent = '👨‍⚕️';
-
   const bub = document.createElement('div');
   bub.className = 'bubble ai';
-
   row.appendChild(av);
   row.appendChild(bub);
   chatMessages.appendChild(row);
-
   let i = 0;
-  const speed = 14;
   const interval = setInterval(() => {
     bub.textContent = text.slice(0, i);
     i++;
     chatMessages.scrollTop = chatMessages.scrollHeight;
     if (i > text.length) clearInterval(interval);
-  }, speed);
+  }, 14);
 }
 
+// ============================================================
+// GỬI TIN NHẮN → CLOUDFLARE WORKER
+// ============================================================
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 110) + 'px';
 }
 
 function handleKeydown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 }
 
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
-
   if (!text && !pendingImage) return;
 
-  // Display user message
   addMessage('user', text || '📷 [Ảnh răng]', pendingImage || null);
   input.value = '';
   autoResize(input);
 
-  // Save image data before clearing
   const imgBase64 = pendingImageBase64;
+  const imgMime = pendingImageMime || 'image/jpeg';
   const hadImage = !!pendingImage;
   clearImagePreview();
 
-  // Build parts for this turn
   const parts = [];
   if (hadImage && imgBase64) {
-    const mimeType = pendingImageMime || 'image/jpeg';
-    parts.push({ inline_data: { mime_type: mimeType, data: imgBase64 } });
+    parts.push({ inline_data: { mime_type: imgMime, data: imgBase64 } });
   }
   parts.push({ text: text || 'Hãy phân tích hình ảnh răng này và đưa ra chẩn đoán sơ bộ.' });
 
@@ -212,31 +216,18 @@ async function sendMessage() {
   if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
 
   updateActivity();
+
   const sendBtn = document.querySelector('.send-btn');
-  sendBtn.disabled = true; sendBtn.style.opacity = '0.5';
+  sendBtn.disabled = true;
+  sendBtn.style.opacity = '0.5';
   addTypingIndicator();
 
   try {
-    const response = await fetch(GEMINI_URL, {
+    const response = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{
-            text: `Bạn là bác sĩ ${DOCTOR_NAME} – bác sĩ răng hàm mặt tại Phòng Khám Nha Khoa Thế Linh.
-
-QUY TẮC BẮT BUỘC – PHẢI TUÂN THỦ TUYỆT ĐỐI:
-1. BẮT BUỘC mở đầu MỌI câu trả lời bằng: "Chào bạn, mình là bác sĩ ${DOCTOR_NAME} tại Nha khoa Thế Linh."
-2. Sau lời chào, tư vấn chuyên sâu về vấn đề răng miệng của bệnh nhân.
-3. Giải thích rõ ràng, thân thiện, dễ hiểu như bác sĩ đang tư vấn trực tiếp.
-4. Nếu bệnh nhân gửi ảnh răng: mô tả chi tiết những gì quan sát được (sâu răng, viêm nướu, mảng bám, nứt vỡ...) và đưa ra chẩn đoán sơ bộ.
-5. Nếu triệu chứng nghiêm trọng: khuyên bệnh nhân đến khám trực tiếp tại Nha khoa Thế Linh ngay.
-6. CHỈ tư vấn về sức khỏe răng miệng. Từ chối lịch sự nếu hỏi chủ đề khác.
-7. Luôn trả lời bằng tiếng Việt, giọng ấm áp, chuyên nghiệp.
-8. Kết thúc bằng câu hỏi nhẹ nhàng để hỗ trợ thêm.
-9. KHÔNG nhớ các cuộc trò chuyện trước. Mỗi tin nhắn là một tư vấn mới.\`
-          }]
-        },
+        system_instruction: { parts: [{ text: getSystemPrompt() }] },
         contents: conversationHistory
       })
     });
@@ -245,7 +236,7 @@ QUY TẮC BẮT BUỘC – PHẢI TUÂN THỦ TUYỆT ĐỐI:
     removeTypingIndicator();
 
     if (data.error) {
-      addMessage('ai', `❌ Lỗi: ${data.error.message}`);
+      addMessage('ai', '❌ Lỗi: ' + data.error.message);
       conversationHistory.pop();
       return;
     }
@@ -258,21 +249,20 @@ QUY TẮC BẮT BUỘC – PHẢI TUÂN THỦ TUYỆT ĐỐI:
 
   } catch (err) {
     removeTypingIndicator();
-    addMessage('ai', '❌ Không thể kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.');
+    addMessage('ai', '❌ Không thể kết nối. Vui lòng thử lại sau.');
     conversationHistory.pop();
   } finally {
-    const sendBtn = document.querySelector('.send-btn');
-    sendBtn.disabled = false; sendBtn.style.opacity = '1';
+    sendBtn.disabled = false;
+    sendBtn.style.opacity = '1';
   }
 }
 
 // ============================================================
-// IMAGE UPLOAD
+// UPLOAD ẢNH
 // ============================================================
 function handleImageUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = ev => {
     const dataUrl = ev.target.result;
@@ -305,26 +295,16 @@ function clearImagePreview() {
 }
 
 // ============================================================
-// MODAL – Đặt lịch khám
+// MODAL ĐẶT LỊCH
 // ============================================================
-function openModal() {
-  document.getElementById('modalOverlay').classList.add('active');
-}
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('active');
-}
-
+function openModal() { document.getElementById('modalOverlay').classList.add('active'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
 function handleModalClick(e) {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 }
-
-// Dịch vụ panel toggle
 function toggleServicePanel() {
-  const panel = document.getElementById('servicePanel');
-  panel.classList.toggle('open');
+  document.getElementById('servicePanel').classList.toggle('open');
 }
-
 function updateServiceCount() {
   const checked = document.querySelectorAll('input[name="service"]:checked').length;
   const badge = document.getElementById('serviceCount');
@@ -338,7 +318,6 @@ function updateServiceCount() {
 
 async function submitBooking(e) {
   e.preventDefault();
-
   const name     = document.getElementById('fname').value.trim();
   const addr     = document.getElementById('faddr').value.trim();
   const phone    = document.getElementById('fphone').value.trim();
@@ -347,44 +326,18 @@ async function submitBooking(e) {
   const services = [...document.querySelectorAll('input[name="service"]:checked')]
     .map(c => c.value).join(', ') || 'Không chọn';
 
-  try {
-    const res = await fetch('http://localhost:3000/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, addr, phone, branch, services })
-    });
-    if (res.ok) {
-      showToast('✅ Đặt lịch thành công! Chúng tôi sẽ liên hệ sớm.');
-    } else {
-      fallbackMailto(name, addr, phone, branch, services);
-    }
-  } catch {
-    fallbackMailto(name, addr, phone, branch, services);
-  }
+  const subject = encodeURIComponent(`📅 Đặt lịch khám – ${name}`);
+  const bodyText = encodeURIComponent(
+    `Họ tên: ${name}\nĐịa chỉ: ${addr}\nSĐT: ${phone}\nCơ sở khám: ${branch}\nDịch vụ: ${services}`
+  );
+  window.open(`mailto:nhakhoathelinh1@gmail.com?subject=${subject}&body=${bodyText}`, '_blank');
+  showToast('✅ Đặt lịch thành công! Vui lòng gửi email để xác nhận.');
 
   closeModal();
   document.getElementById('bookingForm').reset();
   document.getElementById('serviceCount').textContent = '0';
   document.getElementById('servicePanel').classList.remove('open');
   document.querySelectorAll('.branch-opt').forEach(el => el.classList.remove('selected'));
-}
-
-function fallbackMailto(name, addr, phone, branch, services) {
-  const subject = encodeURIComponent(`Đặt lịch khám – ${name}`);
-  const body = encodeURIComponent(
-    `Họ tên: ${name}\nĐịa chỉ: ${addr}\nSĐT: ${phone}\nCơ sở khám: ${branch}\nDịch vụ: ${services}`
-  );
-  window.open(`mailto:nhakhoathelinh1@gmail.com?subject=${subject}&body=${body}`, '_blank');
-  showToast('✅ Mở email đặt lịch thành công!');
-}
-
-// Map tab switch
-function switchMap(index, btn) {
-  document.querySelectorAll('.map-frame').forEach((f, i) => {
-    f.style.display = i === index ? 'block' : 'none';
-  });
-  document.querySelectorAll('.map-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
 }
 
 // Branch radio highlight
@@ -395,6 +348,14 @@ document.addEventListener('change', (e) => {
   }
 });
 
+// Map tab switch
+function switchMap(index, btn) {
+  document.querySelectorAll('.map-frame').forEach((f, i) => {
+    f.style.display = i === index ? 'block' : 'none';
+  });
+  document.querySelectorAll('.map-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
 
 // ============================================================
 // TOAST
